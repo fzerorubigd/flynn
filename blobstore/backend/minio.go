@@ -16,14 +16,13 @@ func init() {
 }
 
 func NewMinio(name string, info map[string]string) (Backend, error) {
-
 	endpoint := info["endpoint"]
 	accessKeyID := info["access_key_id"]
 	secretAccessKey := info["secret_access_key"]
 
-	useSSL := false
-	if strings.ToLower(info["use_ssl"]) == "true" {
-		useSSL = true
+	useSSL := true
+	if strings.ToLower(info["insecure"]) == "false" {
+		useSSL = false
 	}
 	if endpoint == "" {
 		return nil, fmt.Errorf("blobstore: missing minio param endpoint for %s", name)
@@ -55,7 +54,7 @@ func NewMinio(name string, info map[string]string) (Backend, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err = b.sureBucket(); err != nil {
+	if err = b.checkBucket(); err != nil {
 		return nil, err
 	}
 	return b, nil
@@ -68,7 +67,7 @@ type minioBackend struct {
 	client   *minio.Client
 }
 
-func (b *minioBackend) sureBucket() error {
+func (b *minioBackend) checkBucket() error {
 	err := b.client.MakeBucket(b.bucket, b.location)
 	if err != nil {
 		// Check to see if we already own this bucket (which happens if you run this twice)
